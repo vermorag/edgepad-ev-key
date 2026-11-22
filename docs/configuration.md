@@ -81,6 +81,35 @@ running command and allows up to one further second for cleanup. Command
 failure, an unresponsive command, or forcible process termination can prevent
 external cleanup. Hook commands should finish promptly.
 
+## Native media keys
+
+Use `{ key = "KEY_..." }` instead of launching external helpers. Edgepad emits
+real multimedia key events via a separate virtual keyboard through `uinput`,
+allowing the desktop to handle changes and display its native OSD.
+
+```toml
+[[sliders]]
+zone = "left"
+up = { key = "KEY_VOLUMEUP" }
+down = { key = "KEY_VOLUMEDOWN" }
+
+[[sliders]]
+zone = "right"
+up = { key = "KEY_BRIGHTNESSUP" }
+down = { key = "KEY_BRIGHTNESSDOWN" }
+
+[[gestures]]
+zone = "top"
+direction = "tap"
+action = { key = "KEY_PLAYPAUSE" }
+```
+
+Also supported: `KEY_MUTE`, `KEY_NEXTSONG`, and
+`KEY_PREVIOUSSONG`. Commands in the original array format continue
+to work. Native key actions require access to `/dev/uinput`,
+already used by the virtual touchpad. They require no `ydotoold`
+or additional helper utilities. Invalid key names fail configuration parsing.
+
 ## Actions
 
 An action is an array containing a program and its arguments. The program must

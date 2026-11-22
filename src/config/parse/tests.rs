@@ -415,3 +415,36 @@ fn edgepad_config_rejects_empty_command_action_array() {
         Some("gestures[0].action: command action requires at least a program")
     );
 }
+
+#[test]
+fn native_media_keys_parse_for_gesture_and_slider() {
+    let config = EdgepadConfig::parse(r#"
+[[gestures]]
+zone = "top"
+direction = "tap"
+action = { key = "KEY_PLAYPAUSE" }
+
+[[sliders]]
+zone = "left"
+up = { key = "KEY_VOLUMEUP" }
+down = { key = "KEY_VOLUMEDOWN" }
+"#).unwrap();
+    assert_eq!(config.gestures[0].action,
+        GestureActionConfig::Command { argv:
+            crate::media_keys::native_key_argv("KEY_PLAYPAUSE").unwrap() });
+    assert_eq!(config.sliders[0].negative.argv,
+        crate::media_keys::native_key_argv("KEY_VOLUMEUP").unwrap());
+    assert_eq!(config.sliders[0].positive.argv,
+        crate::media_keys::native_key_argv("KEY_VOLUMEDOWN").unwrap());
+}
+
+#[test]
+fn unknown_media_keys_are_rejected() {
+    let err = EdgepadConfig::parse(r#"
+[[sliders]]
+zone = "left"
+up = { key = "KEY_A" }
+down = { key = "KEY_VOLUMEDOWN" }
+"#).unwrap_err();
+    assert!(err.contains("unsupported media key"));
+}

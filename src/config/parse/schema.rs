@@ -37,6 +37,14 @@ pub(super) struct RawGestureBindingConfig {
 pub(super) enum RawGestureActionConfig {
     Command(Vec<String>),
     Log { log: bool },
+    Key { key: String },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub(super) enum RawCommandOrKey {
+    Command(Vec<String>),
+    Key { key: String },
 }
 
 #[derive(Debug, Deserialize)]
@@ -44,10 +52,10 @@ pub(super) enum RawGestureActionConfig {
 pub(super) struct RawSliderBindingConfig {
     pub(super) zone: String,
     pub(super) step: Option<f32>,
-    pub(super) up: Option<Vec<String>>,
-    pub(super) down: Option<Vec<String>>,
-    pub(super) left: Option<Vec<String>>,
-    pub(super) right: Option<Vec<String>>,
-    pub(super) on_release: Option<Vec<String>>,
-    pub(super) on_cancel: Option<Vec<String>>,
+    pub(super) up: Option<RawCommandOrKey>,
+    pub(super) down: Option<RawCommandOrKey>,
+    pub(super) left: Option<RawCommandOrKey>,
+    pub(super) right: Option<RawCommandOrKey>,
+    pub(super) on_release: Option<RawCommandOrKey>,
+    pub(super) on_cancel: Option<RawCommandOrKey>,
 }

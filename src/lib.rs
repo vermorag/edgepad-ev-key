@@ -17,6 +17,7 @@ mod capture_metadata;
 mod diagnostics;
 
 pub mod actions;
+pub mod media_keys;
 pub mod config;
 pub mod device;
 pub mod doctor;

@@ -18,7 +18,7 @@ use super::{
 
 mod schema;
 use schema::{
-    RawEdgepadConfig, RawGestureActionConfig, RawGestureBindingConfig, RawSliderBindingConfig,
+    RawCommandOrKey, RawEdgepadConfig, RawGestureActionConfig, RawGestureBindingConfig, RawSliderBindingConfig,
 };
 
 impl EdgepadConfig {
@@ -162,14 +162,12 @@ impl SliderBindingConfig {
             positive,
             on_release: raw
                 .on_release
-                .map(CommandActionConfig::new)
-                .transpose()
-                .map_err(|err| format!("{label}.on_release: {err}"))?,
+                .map(|raw| parse_command_or_key(raw, &format!("{label}.on_release")))
+                .transpose()?,
             on_cancel: raw
                 .on_cancel
-                .map(CommandActionConfig::new)
-                .transpose()
-                .map_err(|err| format!("{label}.on_cancel: {err}"))?,
+                .map(|raw| parse_command_or_key(raw, &format!("{label}.on_cancel")))
+                .transpose()?,
         })
     }
 }
@@ -200,6 +198,11 @@ impl GestureActionConfig {
         match raw {
             RawGestureActionConfig::Command(argv) => {
                 Self::command(argv).map_err(|err| format!("{}.action: {err}", gesture_label(index)))
+            }
+            RawGestureActionConfig::Key { key } => {
+                let argv = crate::media_keys::native_key_argv(&key)
+                    .map_err(|err| format!("{}.action: {err}", gesture_label(index)))?;
+                Ok(Self::Command { argv })
             }
             RawGestureActionConfig::Log { log: true } => Ok(Self::Log),
             RawGestureActionConfig::Log { log: false } => {
@@ -261,16 +264,25 @@ fn default_slider_axis(zone: Zone) -> SliderAxis {
 fn parse_required_slider_action(
     label: &str,
     direction: &str,
-    raw: Option<Vec<String>>,
+    raw: Option<RawCommandOrKey>,
 ) -> Result<CommandActionConfig, String> {
-    let argv = raw.ok_or_else(|| format!("{label}.{direction} is required"))?;
-    CommandActionConfig::new(argv).map_err(|err| format!("{label}.{direction}: {err}"))
+    let raw = raw.ok_or_else(|| format!("{label}.{direction} is required"))?;
+    parse_command_or_key(raw, &format!("{label}.{direction}"))
+}
+
+fn parse_command_or_key(raw: RawCommandOrKey, label: &str) -> Result<CommandActionConfig, String> {
+    let argv = match raw {
+        RawCommandOrKey::Command(argv) => argv,
+        RawCommandOrKey::Key { key } => crate::media_keys::native_key_argv(&key)
+            .map_err(|err| format!("{label}: {err}"))?,
+    };
+    CommandActionConfig::new(argv).map_err(|err| format!("{label}: {err}"))
 }
 
 fn reject_slider_action(
     label: &str,
     direction: &str,
-    raw: Option<Vec<String>>,
+    raw: Option<RawCommandOrKey>,
 ) -> Result<(), String> {
     if raw.is_some() {
         return Err(format!(

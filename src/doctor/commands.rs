@@ -64,7 +64,7 @@ fn command_usages(config: &EdgepadConfig) -> BTreeMap<String, Vec<String>> {
     let mut usages = BTreeMap::<String, Vec<String>>::new();
     for binding in &config.gestures {
         if let GestureActionConfig::Command { argv } = &binding.action {
-            if let Some(program) = argv.first() {
+            if let Some(program) = argv.first().filter(|_| crate::media_keys::key_action(argv).is_none()) {
                 usages
                     .entry(program.clone())
                     .or_default()
@@ -77,7 +77,7 @@ fn command_usages(config: &EdgepadConfig) -> BTreeMap<String, Vec<String>> {
             ("on_release", &slider.on_release),
             ("on_cancel", &slider.on_cancel),
         ] {
-            if let Some(program) = action.as_ref().and_then(|action| action.argv.first()) {
+            if let Some(program) = action.as_ref().filter(|a| crate::media_keys::key_action(&a.argv).is_none()).and_then(|a| a.argv.first()) {
                 usages
                     .entry(program.clone())
                     .or_default()
@@ -89,7 +89,7 @@ fn command_usages(config: &EdgepadConfig) -> BTreeMap<String, Vec<String>> {
             SliderAxis::Horizontal => [SliderDirection::Left, SliderDirection::Right],
         };
         for direction in directions {
-            if let Some(program) = slider.action_for(direction).argv.first() {
+            if let Some(program) = slider.action_for(direction).argv.first().filter(|_| crate::media_keys::key_action(&slider.action_for(direction).argv).is_none()) {
                 usages
                     .entry(program.clone())
                     .or_default()

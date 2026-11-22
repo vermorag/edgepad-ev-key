@@ -180,6 +180,7 @@ fn run_action_worker<R>(
 ) where
     R: ActionCommandRunner,
 {
+    let mut media_keys = crate::media_keys::MediaKeys::default();
     while !shutdown.is_requested() {
         let Ok(queued) = receiver.recv() else {
             break;
@@ -191,7 +192,12 @@ fn run_action_worker<R>(
         let QueuedCommand { command, permit } = queued;
         drop(permit);
         stats.increment_started_commands();
-        match runner.run(&command.argv, &shutdown) {
+        let result = if let Some(key) = crate::media_keys::key_action(&command.argv) {
+            media_keys.press(key).map(|()| super::ActionCommandStatus::success())
+        } else {
+            runner.run(&command.argv, &shutdown)
+        };
+        match result {
             Ok(status) if status.success => stats.increment_succeeded_commands(),
             Ok(_) => {
                 stats.increment_failed_commands();
